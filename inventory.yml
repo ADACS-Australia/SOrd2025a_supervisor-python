@@ -1,0 +1,8 @@
+all:
+  hosts:
+    setonix:
+      ansible_host: setonix.pawsey.org.au
+      ansible_user: ksmith1
+      software_name: "supervisor-python"
+      ansible_python_interpreter: /usr/bin/python3.11
+      singularity_version: "4.1.0-slurm"

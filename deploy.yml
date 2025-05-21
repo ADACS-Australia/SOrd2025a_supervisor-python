@@ -1,0 +1,86 @@
+- name: Deploy Module
+  hosts: all
+  vars:
+    base_dir: "/software/projects/askaprt/{{ ansible_user }}"
+    build_dir: "/scratch/askaprt/{{ ansible_user }}/{{ software_name }}"
+    software_dir: "{{ base_dir }}/{{ software_name}}/{{ version }}"
+    module_dir: "{{ base_dir }}/modulefiles/{{ software_name }}"
+    module_file_path: "{{ module_dir }}/{{ version }}.lua"
+
+  tasks:
+    - name: Build and deploy
+      block:
+        - name: Build local pacakge
+          delegate_to: localhost
+          shell: |
+            python3 -m venv ansible_venv
+            ansible_venv/bin/python -m pip install build
+            ansible_venv/bin/python -m build
+
+        - name: Find build whl file
+          delegate_to: localhost
+          find:
+            paths: "./dist"
+            patterns: "*.whl"
+          register: dist_files
+
+        - name: Ensure exactly one wheel file was found
+          delegate_to: localhost
+          fail:
+            msg: "Expected exactly one .whl file, found {{ dist_files.files | length }}"
+          when: dist_files.files | length != 1
+
+        - name: Remove current remote build dirs
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - "{{ build_dir }}"
+            - "{{ software_dir }}"
+            - "{{ module_file_path }}"
+
+        - name: Ensure required remote directories exist
+          file:
+            path: "{{ item }}"
+            state: directory
+            mode: "0755"
+          loop:
+            - "{{ module_dir }}"
+            - "{{ software_dir }}"
+            - "{{ software_dir }}/bin"
+            - "{{ build_dir }}"
+
+        - name: Copy wheel file to remote host
+          copy:
+            src: "{{ dist_files.files[0].path }}"
+            dest: "{{ build_dir }}/{{ dist_files.files[0].path | basename }}"
+          register: wheel_copy
+
+        - name: Create virtual env
+          shell: |
+            module load python/3.11
+            python -m venv {{ build_dir }}/venv
+
+        - name: Install package to venv
+          command: "{{ build_dir }}/venv/bin/python -m pip install --force-reinstall --no-cache-dir {{ wheel_copy.dest }}"
+
+        - name: Copy files to software directory
+          shell: |
+            cp -r {{ build_dir }}/venv/lib/python3.11/site-packages {{ software_dir }}/site_packages
+            cp {{ build_dir }}/venv/bin/{{ software_name }} {{ software_dir }}/bin/{{ software_name }}
+
+        - name: Create module file
+          template:
+            src: modulefile.lua.jinja2
+            dest: "{{ module_file_path }}"
+            mode: "0644"
+
+      always:
+        - name: Remove local build dirs
+          delegate_to: localhost
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - ansible_venv
+            - dist

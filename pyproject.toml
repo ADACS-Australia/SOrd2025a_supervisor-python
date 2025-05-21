@@ -1,0 +1,18 @@
+[project]
+name = "supervisor-python"
+version = "0.1.0"
+description = ""
+authors = [{name = "Keegan Smith", email = "keegan.r.s21@gmail.com"}]
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.setuptools]
+packages = ["supervisor_python"]
+
+[project.scripts]
+supervisor-python = "supervisor_python.start:main"

@@ -1,0 +1,12 @@
+help([[
+This module loads Pipeline Mini v{{ version }}
+]])
+
+whatis("Name: {{ software_name }}")
+whatis("Version: {{ version }}")
+whatis("Description: Python package {{ software_name }}")
+
+local site_packages = "{{ software_dir }}/site_packages"
+prepend_path("PYTHONPATH", site_packages)
+local bin = "{{ software_dir }}/bin"
+prepend_path("PATH", bin)
