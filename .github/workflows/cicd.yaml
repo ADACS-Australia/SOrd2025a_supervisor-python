@@ -25,7 +25,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-wheel
-          path: dist/pipeline_mini-0.1.0-py3-none-any.whl
+          path: dist/supervisor_python-0.1.0-py3-none-any.whl
 
   Deploy:
     name: Deploy to Setonix
